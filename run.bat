@@ -1,0 +1,1 @@
+python script.py https://en.wikipedia.org/wiki/Breadth-first_search https://en.wikipedia.org/wiki/SpongeBob_SquarePants
