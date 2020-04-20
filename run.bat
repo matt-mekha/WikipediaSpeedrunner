@@ -1,1 +1,1 @@
-python script.py https://en.wikipedia.org/wiki/Breadth-first_search https://en.wikipedia.org/wiki/United_States
+python script.py https://en.wikipedia.org/wiki/Shikshapatri https://en.wikipedia.org/wiki/Finger_puppet
