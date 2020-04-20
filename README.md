@@ -6,5 +6,5 @@
 - take the highest scoring page and restart the process with that as the starting point until we find the end point
 
 ## To do list
-[] make another thread go in reverse from the end point by using the "What links here" thing
-[] restructure
+[ ] make another thread go in reverse from the end point by using the "What links here" thing
+[ ] restructure
