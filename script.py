@@ -26,21 +26,27 @@ def search(start, end):
         finished = True
         result = urls
     
-    def score_page(text, html, links):
-        return len(text)
+    def score_page(url, text, html, links):
+        title = url.split("/wiki/")[1].lower()
+
+        scores = [
+            (1,   len(text) / 1e4),
+            (100, 100 if len(set(title.split("_")) & end_words) > 0 else 0),
+        ]
+
+        return sum([weight * score for weight, score in scores])
     
     def score_link(urls):
         url = urls[-1]
         title = url.split("/wiki/")[1].lower()
 
         scores = [
-            (1.0, 100 - (0.01 * (len(title) ** 2))),
-            (1.0, 100 if len(title) > 8 and title[:8] == "list_of_" else 0),
-            (5.0, 100 if len(set(title.split("_")) & end_words) > 0 else 0),
+            (3,   100 - (0.01 * (len(title) ** 2))),
+            (1,   100 if len(title) > 8 and title[:8] == "list_of_" else 0),
+            (100, 100 if len(set(title.split("_")) & end_words) > 0 else 0),
         ]
 
-        weighted_scores = [weight * score for weight, score in scores]
-        return sum(weighted_scores)
+        return sum([weight * score for weight, score in scores])
 
     def fetch(urls, url):
         response = get(url, allow_redirects=True)
@@ -74,7 +80,7 @@ def search(start, end):
         if len(parsed_links) > max_links:
             parsed_links = parsed_links[:max_links]
 
-        nodes[url] = (score_page(response.text, html, parsed_links), parsed_links)
+        nodes[url] = (score_page(response.url, response.text, html, parsed_links), parsed_links)
 
     while not finished:
         if len(unsearched) == 0:
