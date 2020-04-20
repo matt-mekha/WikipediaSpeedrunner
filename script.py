@@ -1,29 +1,33 @@
 from bs4 import BeautifulSoup
 from requests import get
 from sys import argv
+from queue import Queue
+from threading import Thread
 
 base = "https://en.wikipedia.org"
 prefixes = ["Talk", "User", "User talk", "Wikipedia", "Wikipedia talk", "File", "File talk", "MediaWiki", "MediaWiki talk", "Template", "Template talk", "Help", "Help talk", "Category", "Category talk", "Portal", "Portal talk", "Draft", "Draft talk", "TimedText", "TimedText talk", "Module", "Module talk", "Book", "Book talk", "Education Program", "Education Program talk", "Gadget", "Gadget talk", "Gadget definition", "Gadget definition talk", "Special", "Media"]
 
+finished, result = False, None
+
 def bfs(start, end):
     checked = set()
-    queue = [[start]]
+    q = Queue()
+    q.put([start])
 
-    while queue:
-        urls = queue.pop(0)
-        url = urls[-1]
+    def done(urls):
+        global finished, result
+        finished = True
+        result = urls
 
-        if url in checked: continue
-        checked.add(url)
-
+    def fetch(url):
         response = get(url, allow_redirects=True)
         print(response.url)
         if response.url.split("/wiki/")[1] == end:
-            return urls
+            return done(urls)
         html = response.text
         dom = BeautifulSoup(html, features="html.parser")
         div = dom.find("div", {"class": "mw-parser-output"})
-        if not div: continue
+        if not div: return
         links = div.find_all("a")
 
         for l in links:
@@ -35,8 +39,26 @@ def bfs(start, end):
                         continue
                 total = urls + [base + href]
                 if href.split("/wiki/")[1] == end:
-                    return total
-                queue.append(total)
+                    return done(total)
+                if finished:
+                    break
+                else:
+                    q.put(total)
+
+    while not finished:
+        urls = q.get(timeout=5)
+        url = urls[-1]
+
+        if url in checked: continue
+        checked.add(url)
+
+        thr = Thread(target=fetch, daemon=True, args=(url,))
+        thr.start()
+    
+    return result
 
 start, end = argv[1], argv[2].split("/wiki/")[1]
-print(bfs(start, end))
+bfs(start, end)
+
+with open("result.txt", "w+") as file:
+    file.write('\n'.join(result))
