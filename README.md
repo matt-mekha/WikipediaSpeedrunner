@@ -3,3 +3,4 @@ Wikipedia pages have lots of links, so simply using a depth-first search or brea
 
 The solution to this problem is to determine which links on a page are most likely to result in a shorter path, and only search the first few. To determine this, the algorithm checks how long the title is (the assumption here is that shorter titles tend to be more general) along with some other factors. After searching the those pages, the algorithm then determine which page is best to be the new "parent" page using factors like content length and number of links. The algorithm will very quickly begin to reach general pages such as "United States".
 
+... to be continued
