@@ -4,6 +4,7 @@ from sys import argv
 from queue import Queue
 from threading import Thread
 from time import time
+from sys import stdout
 
 base = "https://en.wikipedia.org"
 midpoint = base + "/wiki/United_States"
@@ -12,6 +13,14 @@ max_links = 50
 midpoint_links = []
 
 def search(start, end):
+
+    def url_input(text):
+        if "/wiki/" not in text:
+            text = "/wiki/" + text
+        if "wikipedia.org" not in text.lower():
+            text = base + text
+        return text
+            
 
     def validate(href):
         if href and len(href) > 6 and href[:6] == "/wiki/":
@@ -40,10 +49,10 @@ def search(start, end):
             href = validate(l.get("href"))
             if not href: continue
             
-            total = urls + [base + href]
+            total = urls + [(l.contents[0], base + href)]
             if href.lower().split("/wiki/")[1] == end:
                 return done(total)
-            if total[-1] not in checked:
+            if total[-1][1] not in checked:
                 parsed_links.append(total)
 
         return (title, len(response.text), parsed_links)
@@ -66,14 +75,14 @@ def search(start, end):
             href = validate(li.contents[0].get("href"))
             if not href: continue
 
-            total = urls + [base + href]
+            total = urls + [(str(li.contents[0].contents[0]), base + href)]
             found_title = href.lower().split("/wiki/")[1]
             if found_title == end:
                 return done(total)
             elif found_title in midpoint_links:
                 total += [midpoint]
                 return done(total)
-            if total[-1] not in checked:
+            if total[-1][1] not in checked:
                 parsed_links.append(total)
         
         return (title, len(response.text), parsed_links)
@@ -84,7 +93,7 @@ def search(start, end):
 
         checked = set()
 
-        unsearched = [[start]]
+        unsearched = [[("", start)]]
         nodes = {}
         threads = []
 
@@ -101,7 +110,7 @@ def search(start, end):
             return sum([weight * score for weight, score in scores])
         
         def score_link(urls):
-            url = urls[-1]
+            url = urls[-1][1]
             title = url.split("/wiki/")[1]
 
             scores = [
@@ -140,7 +149,7 @@ def search(start, end):
                 nodes = {}
             
             urls = unsearched.pop(0)
-            url = urls[-1]
+            url = urls[-1][1]
 
             if url in checked: continue
             checked.add(url)
@@ -162,23 +171,26 @@ def search(start, end):
     start_time = time()
 
     _, __, midpoint_links = forward_tree([], midpoint, (lambda x:None), set(), "", [], set())
-    midpoint_links = {x[0].split("/wiki/")[1].lower() for x in midpoint_links}
+    midpoint_links = {(x[0][0], x[0][1].split("/wiki/")[1].lower()) for x in midpoint_links}
 
     result1, result2 = [], []
-    subsearch(end, midpoint, result2, backward_tree, midpoint_links)
-    subsearch(start, midpoint, result1, forward_tree)
+    subsearch(url_input(start), midpoint, result1, forward_tree)
+    subsearch(url_input(end), midpoint, result2, backward_tree, midpoint_links)
     result = result1[0][:-1] + result2[0][::-1]
 
     end_time = time()
     elapsed_time = round((end_time - start_time) * 100.0) / 100.0
 
+    def print_result(file = stdout):
+        print(*[f"{r[0]}\n >> {r[1]}" for r in result], sep="\n", file=file)
+
     with open("result.txt", "w+") as file:
-        file.write('\n'.join(result))
+        print_result(file = file)
     
-    print(f"RESULT in {elapsed_time}s:")
-    print(*result, sep="\n")
-    print("\nSAVED TO \"result.txt\"")
-    return result
+    print(f"RESULT in {elapsed_time}s:\n")
+    print_result()
+    print("\nSAVED TO \"result.txt\"\n")
+    #input("Press ENTER to close...")
 
 ###########################################
 
